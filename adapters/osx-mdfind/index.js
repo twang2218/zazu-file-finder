@@ -1,6 +1,7 @@
 const fuzzyfind = require('fuzzyfind')
 const Adapter = require('../../lib/adapter')
 const mdfind = require('./mdfind')
+const Promise = require('bluebird')
 
 class MDFind extends Adapter {
   findFiles (query) {
@@ -37,11 +38,12 @@ class MDFind extends Adapter {
   }
 
   cacheIcons (apps) {
-    return Promise.all(apps
-      .filter((file) => !file.hasIcon())
-      .slice(0, 20)
-      .map(file => file.generateIcon()))
-      .then(() => apps)
+    //  set concurrent limit for Promise.map()
+    return Promise.map(
+      apps.filter((file) => !file.hasIcon()),
+      app => app.generateIcon(),
+      { concurrency: 5 }
+    ).then(() => apps)
   }
 
   startCache () {
